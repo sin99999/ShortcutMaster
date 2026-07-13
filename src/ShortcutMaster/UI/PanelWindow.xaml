@@ -55,7 +55,7 @@
                             Width="26" Height="26"
                             Focusable="False" Cursor="Hand"
                             Foreground="{StaticResource TextSecondaryBrush}"
-                            ToolTip="一覧を閉じる"
+                            ToolTip="ShortcutMaster を終了"
                             Click="OnCloseClicked">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">

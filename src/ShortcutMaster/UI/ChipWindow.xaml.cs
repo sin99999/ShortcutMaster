@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using ShortcutMaster.Interop;
 
@@ -23,6 +23,9 @@ public partial class ChipWindow : Window
     }
 
     private void OnChipClicked(object sender, MouseButtonEventArgs e) => Clicked?.Invoke();
+
+    private void OnExitClicked(object sender, RoutedEventArgs e)
+        => ((App)System.Windows.Application.Current).ExitApplication();
 
     public void SetContext(string displayName)
         => ChipLabel.Text = $"{displayName} のショートカット";

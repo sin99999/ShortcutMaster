@@ -51,7 +51,8 @@ public partial class PanelWindow : Window
 
     private void OnMinimizeClicked(object sender, RoutedEventArgs e) => CollapseToChip();
 
-    private void OnCloseClicked(object sender, RoutedEventArgs e) => CollapseToChip();
+    private void OnCloseClicked(object sender, RoutedEventArgs e)
+        => ((App)System.Windows.Application.Current).ExitApplication();
 
     private void OnRowClicked(object sender, MouseButtonEventArgs e)
     {

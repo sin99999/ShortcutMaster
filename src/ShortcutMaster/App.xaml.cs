@@ -259,7 +259,7 @@ public partial class App : Application
             ShowToast(outcome.Message);
     }
 
-    private void ExitApplication()
+    public void ExitApplication()
     {
         if (_exiting) return;
         _exiting = true;
