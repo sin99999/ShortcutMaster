@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using ShortcutMaster.Interop;
@@ -47,7 +47,11 @@ public partial class PanelWindow : Window
         Top = Math.Max(workArea.Top + 8, _chip.Top - ActualHeight - 8);
     }
 
-    private void OnCloseClicked(object sender, RoutedEventArgs e) => Hide();
+    private void CollapseToChip() => Hide();
+
+    private void OnMinimizeClicked(object sender, RoutedEventArgs e) => CollapseToChip();
+
+    private void OnCloseClicked(object sender, RoutedEventArgs e) => CollapseToChip();
 
     private void OnRowClicked(object sender, MouseButtonEventArgs e)
     {

@@ -1,4 +1,4 @@
-<Window x:Class="ShortcutMaster.UI.PanelWindow"
+﻿<Window x:Class="ShortcutMaster.UI.PanelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ShortcutMaster Panel"
@@ -31,25 +31,46 @@
                                Foreground="{StaticResource TextSecondaryBrush}"
                                Margin="0,2,0,0" />
                 </StackPanel>
-                <Button Grid.Column="1"
-                        Content="✕" FontSize="12"
-                        Width="26" Height="26"
-                        Focusable="False" Cursor="Hand"
-                        Foreground="{StaticResource TextSecondaryBrush}"
-                        Click="OnCloseClicked">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="ButtonFace" Background="Transparent" CornerRadius="4">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="ButtonFace" Property="Background" Value="{StaticResource RowHoverBrush}" />
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="−" FontSize="14" FontWeight="SemiBold"
+                            Width="26" Height="26" Margin="0,0,4,0"
+                            Focusable="False" Cursor="Hand"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            ToolTip="一覧を閉じてチップに戻す"
+                            Click="OnMinimizeClicked">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="ButtonFace" Background="Transparent" CornerRadius="4">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ButtonFace" Property="Background" Value="{StaticResource RowHoverBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button Content="✕" FontSize="12"
+                            Width="26" Height="26"
+                            Focusable="False" Cursor="Hand"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            ToolTip="一覧を閉じる"
+                            Click="OnCloseClicked">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="ButtonFace" Background="Transparent" CornerRadius="4">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ButtonFace" Property="Background" Value="{StaticResource RowHoverBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
             </Grid>
 
             <Border Grid.Row="1" Height="1" Background="{StaticResource PanelBorderBrush}" />
