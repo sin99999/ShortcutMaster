@@ -179,6 +179,20 @@ public partial class App : Application
             return;
         }
 
+        if (!string.IsNullOrWhiteSpace(entry.FocusProcess))
+        {
+            var activate = await Task.Run(() => ProcessWindowActivator.TryActivate(entry.FocusProcess!));
+            switch (activate)
+            {
+                case ActivateOutcome.Activated:
+                    _ = Task.Run(() => _usage.Increment(entry.Id));
+                    return;
+                case ActivateOutcome.Failed:
+                    ShowToast("起動中ですが前面に表示できません。管理者権限の違いをご確認ください。");
+                    return;
+            }
+        }
+
         IReadOnlyList<ChordStep> steps;
         try
         {

@@ -81,7 +81,7 @@
     { "id": "win.taskbar-cycle", "keys": "Win+T", "action": "タスクバーのアプリに順にフォーカス", "note": "Enter で起動・切り替え", "category": "タスクバー", "priority": 38, "send": ["Win+T"] },
     { "id": "win.notification-area", "keys": "Win+B", "action": "通知領域の最初のアイコンにフォーカス", "category": "タスクバー", "priority": 32, "send": ["Win+B"] },
     { "id": "win.taskbar-admin", "keys": "Ctrl+Shift+クリック", "action": "タスクバーのアプリを管理者として起動", "category": "タスクバー", "priority": 48 },
-    { "id": "win.task-manager", "keys": "Ctrl+Shift+Esc", "action": "タスクマネージャーを開く", "category": "システム・設定", "priority": 88, "send": ["Ctrl+Shift+Esc"] },
+    { "id": "win.task-manager", "keys": "Ctrl+Shift+Esc", "action": "タスクマネージャーを開く", "note": "起動中なら前面に表示", "category": "システム・設定", "priority": 88, "focusProcess": "Taskmgr", "send": ["Ctrl+Shift+Esc"] },
     { "id": "win.settings", "keys": "Win+I", "action": "設定を開く", "category": "システム・設定", "priority": 85, "send": ["Win+I"] },
     { "id": "win.search", "keys": "Win+S", "action": "検索を開く", "note": "アプリ・ファイル・Web をまとめて検索", "category": "システム・設定", "priority": 82, "send": ["Win+S"] },
     { "id": "win.start", "keys": "Win", "action": "スタートメニューを開く", "note": "もう一度押すと閉じる", "category": "システム・設定", "priority": 78, "send": ["Win"] },

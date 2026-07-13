@@ -1,4 +1,4 @@
-namespace ShortcutMaster.Core.Models;
+﻿namespace ShortcutMaster.Core.Models;
 
 /// <summary>辞書 JSON の 1 エントリ。</summary>
 public sealed class ShortcutEntry
@@ -21,6 +21,12 @@ public sealed class ShortcutEntry
 
     /// <summary>送信するキー手順。null または空 = 表示のみ。</summary>
     public string[]? Send { get; set; }
+
+    /// <summary>
+    /// 既に起動中なら前面へ出すプロセス名（拡張子なし）。
+    /// 見つからなければ send で起動を試みる。
+    /// </summary>
+    public string? FocusProcess { get; set; }
 
     public bool IsSendable => Send is { Length: > 0 };
 }
