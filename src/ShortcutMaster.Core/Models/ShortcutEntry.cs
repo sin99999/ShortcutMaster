@@ -28,5 +28,7 @@ public sealed class ShortcutEntry
     /// </summary>
     public string? FocusProcess { get; set; }
 
-    public bool IsSendable => Send is { Length: > 0 };
+    public bool HasFocusProcess => !string.IsNullOrWhiteSpace(FocusProcess);
+
+    public bool IsSendable => (Send is { Length: > 0 }) || HasFocusProcess;
 }

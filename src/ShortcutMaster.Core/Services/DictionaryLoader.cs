@@ -88,6 +88,22 @@ public static class DictionaryLoader
         return errors;
     }
 
+    /// <summary>エントリが現在の辞書（＋ Windows 共通）に属するか。</summary>
+    public static bool EntryBelongsToContext(
+        ShortcutEntry entry,
+        ShortcutDictionary dictionary,
+        ShortcutDictionary? windowsCommon)
+    {
+        if (dictionary.Entries.Any(e => e.Id.Equals(entry.Id, StringComparison.OrdinalIgnoreCase)))
+            return true;
+
+        if (!dictionary.IsFallback &&
+            windowsCommon?.Entries.Any(e => e.Id.Equals(entry.Id, StringComparison.OrdinalIgnoreCase)) == true)
+            return true;
+
+        return false;
+    }
+
     /// <summary>プロセス名に対応する辞書を返す。なければフォールバック辞書。</summary>
     public static ShortcutDictionary? ResolveForProcess(IEnumerable<ShortcutDictionary> dictionaries, string? processName)
     {

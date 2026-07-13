@@ -20,6 +20,7 @@ public partial class App : Application
     private bool _ownsMutex;
     private volatile bool _exiting;
     private int _cleanedUp;
+    private int _shortcutBusy;
 
     private ForegroundTracker? _tracker;
     private KeyInjector? _injector;
@@ -78,6 +79,12 @@ public partial class App : Application
         _tracker.Changed += _ =>
         {
             if (_exiting) return;
+            if (_panel is { IsVisible: true })
+            {
+                UpdateContext();
+                return;
+            }
+
             _refreshDebounce!.Stop();
             _refreshDebounce.Start();
         };
@@ -85,6 +92,9 @@ public partial class App : Application
 
         _chip.Show();
         UpdateContext();
+
+        if (!_tracker.IsHookActive)
+            ShowToast("前面アプリの検知を開始できませんでした。再起動をお試しください。");
 
         if (_dictionaries.Count == 0)
         {
@@ -117,9 +127,17 @@ public partial class App : Application
         _notifyIcon.DoubleClick += (_, _) => Dispatcher.Invoke(TogglePanel);
     }
 
+    public bool TryBeginShortcut()
+        => !_exiting && Interlocked.CompareExchange(ref _shortcutBusy, 1, 0) == 0;
+
+    public void EndShortcut() => Interlocked.Exchange(ref _shortcutBusy, 0);
+
     private ShortcutDictionary? ResolveCurrentDictionary()
         => DictionaryLoader.ResolveForProcess(_dictionaries, _tracker?.Current?.ProcessName)
            ?? _dictionaries.FirstOrDefault();
+
+    private ShortcutDictionary? ResolveWindowsCommon()
+        => _dictionaries.FirstOrDefault(d => d.IsFallback);
 
     private void UpdateContext()
     {
@@ -137,8 +155,13 @@ public partial class App : Application
     {
         if (_panel == null || _usage == null) return;
 
-        var windowsCommon = dictionary.IsFallback ? null : _dictionaries.FirstOrDefault(d => d.IsFallback);
-        var groups = PanelGroupBuilder.Build(dictionary, windowsCommon, _usage.GetCount);
+        var windowsCommon = dictionary.IsFallback ? null : ResolveWindowsCommon();
+        var catalog = PanelCatalogBuilder.Build(dictionary, windowsCommon, _usage.GetCount);
+        var groups = catalog.Select(g => new GroupVm
+        {
+            Name = g.Name,
+            Rows = g.Entries.Select(e => new RowVm { Entry = e }).ToList(),
+        }).ToList();
         _panel.SetContent(dictionary.DisplayName, groups);
     }
 
@@ -179,24 +202,47 @@ public partial class App : Application
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(entry.FocusProcess))
+        var dictionary = ResolveCurrentDictionary();
+        if (dictionary == null)
+        {
+            ShowToast("対象のウィンドウが見つかりません。");
+            return;
+        }
+
+        if (!DictionaryLoader.EntryBelongsToContext(entry, dictionary, ResolveWindowsCommon()))
+        {
+            ShowToast("表示中のアプリが切り替わりました。一覧を開き直してください。");
+            return;
+        }
+
+        if (entry.HasFocusProcess)
         {
             var activate = await Task.Run(() => ProcessWindowActivator.TryActivate(entry.FocusProcess!));
+            if (_exiting) return;
+
             switch (activate)
             {
                 case ActivateOutcome.Activated:
-                    _ = Task.Run(() => _usage.Increment(entry.Id));
+                    _usage.Increment(entry.Id);
                     return;
-                case ActivateOutcome.Failed:
-                    ShowToast("起動中ですが前面に表示できません。管理者権限の違いをご確認ください。");
+                case ActivateOutcome.FailedElevated:
+                    ShowToast("管理者権限で起動中のため前面に表示できません。");
                     return;
             }
+        }
+
+        if (entry.Send is not { Length: > 0 })
+        {
+            ShowToast(entry.HasFocusProcess
+                ? "対象のプロセスは起動していません。"
+                : "このショートカットは送信できません。");
+            return;
         }
 
         IReadOnlyList<ChordStep> steps;
         try
         {
-            steps = ChordParser.ParseSequence(entry.Send!);
+            steps = ChordParser.ParseSequence(entry.Send);
         }
         catch
         {
@@ -205,15 +251,12 @@ public partial class App : Application
         }
 
         var outcome = await _injector.SendAsync(target, steps);
+        if (_exiting) return;
+
         if (outcome.Success)
-        {
-            var id = entry.Id;
-            _ = Task.Run(() => _usage.Increment(id));
-        }
+            _usage.Increment(entry.Id);
         else
-        {
             ShowToast(outcome.Message);
-        }
     }
 
     private void ExitApplication()

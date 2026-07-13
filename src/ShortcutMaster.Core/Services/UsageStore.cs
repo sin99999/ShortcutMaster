@@ -52,7 +52,11 @@ public sealed class UsageStore : IDisposable
         {
             _counts[id] = (_counts.TryGetValue(id, out var count) ? count : 0) + 1;
         }
-        ScheduleSave();
+
+        if (_disposed)
+            SaveAtomic();
+        else
+            ScheduleSave();
     }
 
     /// <summary>保留中の保存を即時実行する（テスト・終了時用）。</summary>
@@ -102,8 +106,8 @@ public sealed class UsageStore : IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        _disposed = true;
         FlushPending();
+        _disposed = true;
         lock (_saveGate)
         {
             _saveTimer?.Dispose();

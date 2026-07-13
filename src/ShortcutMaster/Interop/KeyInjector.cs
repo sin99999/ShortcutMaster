@@ -28,10 +28,14 @@ public sealed class KeyInjector : IDisposable
 
     private const int StepDelayMs = 130;
     private readonly SemaphoreSlim _sendGate = new(1, 1);
+    private int _inFlight;
+
+    public bool IsBusy => Volatile.Read(ref _inFlight) > 0;
 
     public async Task<SendOutcome> SendAsync(ForegroundInfo target, IReadOnlyList<ChordStep> steps)
     {
         await _sendGate.WaitAsync().ConfigureAwait(false);
+        Interlocked.Increment(ref _inFlight);
         try
         {
             if (!NativeMethods.IsWindow(target.Hwnd))
@@ -40,7 +44,7 @@ public sealed class KeyInjector : IDisposable
             if (NativeMethods.GetForegroundWindow() != target.Hwnd)
                 return new SendOutcome(false, "対象のアプリが切り替わったため中止しました。");
 
-            if (ImeHelper.IsImeOpen(target.Hwnd))
+            if (ImeHelper.IsImeComposing(target.Hwnd))
                 return new SendOutcome(false, "日本語入力の変換中は送信できません。確定してからお試しください。");
 
             NativeMethods.GetWindowThreadProcessId(target.Hwnd, out var pid);
@@ -51,6 +55,7 @@ public sealed class KeyInjector : IDisposable
         }
         finally
         {
+            Interlocked.Decrement(ref _inFlight);
             _sendGate.Release();
         }
     }
@@ -60,13 +65,16 @@ public sealed class KeyInjector : IDisposable
         if (NativeMethods.GetForegroundWindow() != targetHwnd)
             return new SendOutcome(false, "対象のアプリが切り替わったため中止しました。");
 
-        ReleaseStuckModifiers();
+        ReleaseStuckModifiers(steps);
         Thread.Sleep(30);
 
         for (var i = 0; i < steps.Count; i++)
         {
             if (NativeMethods.GetForegroundWindow() != targetHwnd)
                 return new SendOutcome(false, "送信中にアプリが切り替わったため中止しました。");
+
+            if (ImeHelper.IsImeComposing(targetHwnd))
+                return new SendOutcome(false, "日本語入力の変換中は送信できません。確定してからお試しください。");
 
             if (i > 0) Thread.Sleep(StepDelayMs);
 
@@ -79,11 +87,22 @@ public sealed class KeyInjector : IDisposable
         return SendOutcome.Ok;
     }
 
-    private static void ReleaseStuckModifiers()
+    private static void ReleaseStuckModifiers(IReadOnlyList<ChordStep> steps)
     {
+        var releaseKeys = new HashSet<ushort>();
+        foreach (var step in steps)
+        {
+            if (step.IsModifierTap) continue;
+            foreach (var mod in step.Modifiers)
+                releaseKeys.Add(mod.VirtualKey);
+        }
+
+        if (releaseKeys.Count == 0) return;
+
         var ups = new List<NativeMethods.INPUT>();
         foreach (var mod in PhysicalModifiers)
         {
+            if (!releaseKeys.Contains(mod.VirtualKey)) continue;
             if ((NativeMethods.GetAsyncKeyState(mod.VirtualKey) & 0x8000) != 0)
                 ups.Add(MakeInput(mod, keyUp: true));
         }

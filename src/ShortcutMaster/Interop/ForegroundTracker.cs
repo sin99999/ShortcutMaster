@@ -18,6 +18,9 @@ public sealed class ForegroundTracker : IDisposable
     /// <summary>直近の（自分以外の）前面ウィンドウ。</summary>
     public ForegroundInfo? Current { get; private set; }
 
+    /// <summary>WinEvent フックが有効か。</summary>
+    public bool IsHookActive { get; private set; }
+
     /// <summary>フック元スレッド（UI スレッド）で発火する。</summary>
     public event Action<ForegroundInfo>? Changed;
 
@@ -28,6 +31,7 @@ public sealed class ForegroundTracker : IDisposable
         _hook = NativeMethods.SetWinEventHook(
             NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND,
             IntPtr.Zero, _callback, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
+        IsHookActive = _hook != IntPtr.Zero;
     }
 
     private void OnWinEvent(IntPtr hook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)

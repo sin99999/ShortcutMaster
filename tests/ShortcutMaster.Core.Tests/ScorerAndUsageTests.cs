@@ -71,4 +71,24 @@ public class ScorerAndUsageTests
             if (File.Exists(path)) File.Delete(path);
         }
     }
+
+    [Fact]
+    public void UsageStore_IncrementAfterDisposeStillPersists()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"sm_usage_{Guid.NewGuid():N}.json");
+        try
+        {
+            var store = new UsageStore(path);
+            store.Increment("win.copy");
+            store.Dispose();
+            store.Increment("win.copy");
+
+            var reloaded = new UsageStore(path);
+            Assert.Equal(2, reloaded.GetCount("win.copy"));
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
 }

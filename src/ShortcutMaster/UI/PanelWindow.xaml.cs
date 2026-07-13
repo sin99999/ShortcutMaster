@@ -64,8 +64,22 @@ public partial class PanelWindow : Window
             return;
         }
 
-        // クリックが伝わったことだけ視覚で返す（成功時トーストは出さない）
+        if (!app.TryBeginShortcut())
+            return;
+
         element.BeginAnimation(OpacityProperty, new DoubleAnimation(0.35, 1.0, TimeSpan.FromMilliseconds(240)));
-        _ = app.ExecuteEntryAsync(row.Entry);
+        _ = ExecuteRowAsync(app, row);
+    }
+
+    private static async Task ExecuteRowAsync(App app, RowVm row)
+    {
+        try
+        {
+            await app.ExecuteEntryAsync(row.Entry);
+        }
+        finally
+        {
+            app.EndShortcut();
+        }
     }
 }

@@ -8,7 +8,8 @@ public enum ActivateOutcome
 {
     NotRunning,
     Activated,
-    Failed,
+    FailedElevated,
+    FailedForeground,
 }
 
 /// <summary>既に起動中のプロセスのメインウィンドウを前面へ出す。</summary>
@@ -27,9 +28,9 @@ public static class ProcessWindowActivator
 
         NativeMethods.GetWindowThreadProcessId(hwnd, out var pid);
         if (!ElevationChecker.IsCurrentProcessElevated() && ElevationChecker.IsProcessElevated(pid) == true)
-            return ActivateOutcome.Failed;
+            return ActivateOutcome.FailedElevated;
 
-        return BringToForeground(hwnd) ? ActivateOutcome.Activated : ActivateOutcome.Failed;
+        return BringToForeground(hwnd) ? ActivateOutcome.Activated : ActivateOutcome.FailedForeground;
     }
 
     private static IntPtr FindBestWindow(string processName)
