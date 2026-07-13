@@ -18,6 +18,8 @@ public partial class App : Application
 
     private Mutex? _singleInstanceMutex;
     private bool _ownsMutex;
+    private volatile bool _exiting;
+    private int _cleanedUp;
 
     private ForegroundTracker? _tracker;
     private KeyInjector? _injector;
@@ -75,6 +77,7 @@ public partial class App : Application
         };
         _tracker.Changed += _ =>
         {
+            if (_exiting) return;
             _refreshDebounce!.Stop();
             _refreshDebounce.Start();
         };
@@ -101,7 +104,7 @@ public partial class App : Application
     {
         _notifyIcon = new System.Windows.Forms.NotifyIcon
         {
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = AppIcon.LoadTrayIcon(),
             Visible = true,
             Text = "ShortcutMaster",
         };
@@ -120,6 +123,8 @@ public partial class App : Application
 
     private void UpdateContext()
     {
+        if (_exiting) return;
+
         var dictionary = ResolveCurrentDictionary();
         if (dictionary == null || _chip == null) return;
 
@@ -139,7 +144,7 @@ public partial class App : Application
 
     public void TogglePanel()
     {
-        if (_panel == null) return;
+        if (_exiting || _panel == null) return;
 
         if (_panel.IsVisible)
         {
@@ -156,6 +161,8 @@ public partial class App : Application
 
     public void ShowToast(string message)
     {
+        if (_exiting) return;
+
         _toast ??= new ToastWindow();
         Window anchor = _panel is { IsVisible: true } ? _panel : _chip!;
         _toast.ShowMessage(message, anchor);
@@ -164,7 +171,7 @@ public partial class App : Application
     /// <summary>パネルの行クリックから呼ばれる。直前の前面アプリへショートカットを送信する。</summary>
     public async Task ExecuteEntryAsync(ShortcutEntry entry)
     {
-        if (_injector == null || _usage == null) return;
+        if (_exiting || _injector == null || _usage == null) return;
 
         if (_tracker?.Current is not { } target)
         {
@@ -197,11 +204,19 @@ public partial class App : Application
 
     private void ExitApplication()
     {
-        // 画面を先に消してから後片付けする（ユーザーを待たせない）
+        if (_exiting) return;
+        _exiting = true;
+
+        _refreshDebounce?.Stop();
+
+        // 見えるものを先に消す（終了のキビキビ感）
         _panel?.Hide();
         _chip?.Hide();
         _toast?.Hide();
-        Shutdown();
+        if (_notifyIcon != null)
+            _notifyIcon.Visible = false;
+
+        Shutdown(0);
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -212,18 +227,26 @@ public partial class App : Application
 
     private void CleanupResources()
     {
+        if (Interlocked.Exchange(ref _cleanedUp, 1) == 1) return;
+
+        _refreshDebounce?.Stop();
+        _refreshDebounce = null;
+
         _tracker?.Dispose();
         _tracker = null;
         _injector?.Dispose();
         _injector = null;
         _usage?.Dispose();
         _usage = null;
+
         if (_notifyIcon != null)
         {
             _notifyIcon.Visible = false;
+            _notifyIcon.Icon?.Dispose();
             _notifyIcon.Dispose();
             _notifyIcon = null;
         }
+
         if (_ownsMutex)
         {
             try { _singleInstanceMutex?.ReleaseMutex(); } catch { }

@@ -10,7 +10,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>ShortcutMaster</AssemblyName>
     <RootNamespace>ShortcutMaster</RootNamespace>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
@@ -20,6 +21,7 @@
 
   <ItemGroup>
     <None Include="Data\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
