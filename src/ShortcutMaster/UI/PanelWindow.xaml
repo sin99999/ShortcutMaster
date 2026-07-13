@@ -1,0 +1,128 @@
+<Window x:Class="ShortcutMaster.UI.PanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ShortcutMaster Panel"
+        WindowStyle="None" ResizeMode="NoResize"
+        AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ShowActivated="False" Focusable="False"
+        Width="410" SizeToContent="Height">
+    <Border CornerRadius="10"
+            Background="{StaticResource PanelBackgroundBrush}"
+            BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="14,10,10,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock x:Name="HeaderTitle"
+                               Text="ショートカット"
+                               FontSize="13.5" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="クリックすると直前まで使っていたアプリに送信します"
+                               FontSize="10.5"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,2,0,0" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Content="✕" FontSize="12"
+                        Width="26" Height="26"
+                        Focusable="False" Cursor="Hand"
+                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Click="OnCloseClicked">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ButtonFace" Background="Transparent" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ButtonFace" Property="Background" Value="{StaticResource RowHoverBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+
+            <Border Grid.Row="1" Height="1" Background="{StaticResource PanelBorderBrush}" />
+
+            <ScrollViewer x:Name="Scroller" Grid.Row="2"
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="8,2,8,8" MaxHeight="560">
+                <ItemsControl x:Name="GroupsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4,8,4,2">
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="6,0,0,5" />
+                                <ItemsControl ItemsSource="{Binding Rows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border MouseLeftButtonUp="OnRowClicked"
+                                                    Cursor="Hand" CornerRadius="6"
+                                                    Padding="8,6" Margin="0,1">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="Transparent" />
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="{StaticResource RowHoverBrush}" />
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="132" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Background="{StaticResource BadgeBackgroundBrush}"
+                                                            BorderBrush="{StaticResource BadgeBorderBrush}"
+                                                            BorderThickness="1" CornerRadius="4"
+                                                            Padding="6,3"
+                                                            HorizontalAlignment="Left" VerticalAlignment="Top">
+                                                        <TextBlock Text="{Binding KeysText}"
+                                                                   FontFamily="Consolas" FontSize="11"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   TextWrapping="Wrap" MaxWidth="118" />
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" Margin="10,1,4,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding ActionText}"
+                                                                   FontSize="12"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   TextWrapping="Wrap" />
+                                                        <TextBlock Text="{Binding NoteText}"
+                                                                   FontSize="10.5"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                   TextWrapping="Wrap" Margin="0,1,0,0"
+                                                                   Visibility="{Binding NoteVisibility}" />
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="表示のみ" FontSize="10"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                                               VerticalAlignment="Center"
+                                                               Visibility="{Binding DisplayOnlyVisibility}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</Window>

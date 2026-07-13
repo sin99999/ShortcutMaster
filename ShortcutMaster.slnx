@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ShortcutMaster.Core/ShortcutMaster.Core.csproj" />
+    <Project Path="src/ShortcutMaster/ShortcutMaster.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ShortcutMaster.Core.Tests/ShortcutMaster.Core.Tests.csproj" />
+  </Folder>
+</Solution>
