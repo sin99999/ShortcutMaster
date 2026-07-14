@@ -1,8 +1,11 @@
 ﻿<div id="top"></div>
 
-<h1 align="center">ShortcutMaster</h1>
+<h1 align="center">
+  <img src="docs/images/shortcutmaster-icon.png" alt="ShortcutMaster" width="64" height="64"><br>
+  ShortcutMaster
+</h1>
 
-<p align="center"><strong>Windows 向け常駐ショートカット相棒 — 前面アプリに合わせた一覧表示と 1 クリック実行（クラウド API キー不要）</strong></p>
+<p align="center"><strong>Windows 向け常駐ショートカット支援ツール — 使用中のアプリに合わせた一覧表示と 1 クリック実行（クラウド API キー不要）</strong></p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
@@ -17,12 +20,12 @@
 
 ## 使用技術一覧
 
-<p style="display: inline">
-  <img src="https://img.shields.io/badge/-C%23-239120.svg?logo=csharp&style=for-the-badge&logoColor=white">
-  <img src="https://img.shields.io/badge/-.NET_10-512BD4.svg?logo=dotnet&style=for-the-badge">
-  <img src="https://img.shields.io/badge/-WPF-512BD4.svg?logo=windows&style=for-the-badge">
-  <img src="https://img.shields.io/badge/-Win32-0078D4.svg?logo=windows&style=for-the-badge">
-  <img src="https://img.shields.io/badge/-xUnit-2D9CDB.svg?logo=xunit&style=for-the-badge&logoColor=white">
+<p>
+  <img src="https://img.shields.io/badge/-C%23-239120.svg?logo=csharp&style=for-the-badge&logoColor=white" alt="C#">
+  <img src="https://img.shields.io/badge/-.NET_10-512BD4.svg?logo=dotnet&style=for-the-badge" alt=".NET 10">
+  <img src="https://img.shields.io/badge/-WPF-512BD4.svg?logo=windows&style=for-the-badge" alt="WPF">
+  <img src="https://img.shields.io/badge/-Win32-0078D4.svg?logo=windows&style=for-the-badge" alt="Win32">
+  <img src="https://img.shields.io/badge/-xUnit-2D9CDB.svg?style=for-the-badge&logoColor=white" alt="xUnit">
 </p>
 
 ## 目次
@@ -41,7 +44,7 @@
 
 ## ShortcutMaster とは
 
-Windows 向けの常駐型ショートカット支援ツールです。**いま前面で使っているアプリ**（Windows 本体 / Cursor / Excel など）に合わせて、利用可能なキーボードショートカットを画面右下の小さなチップから表示し、**クリック 1 回で直前のアプリへ送信**します。
+Windows 向けの常駐型ショートカット支援ツールです。**いま画面の手前で操作しているアプリ**（Windows 本体 / Cursor / Excel など）に合わせて、利用できるキーボードショートカットを画面右下の小さな表示（チップ）から示し、**クリック 1 回でそのアプリへキー操作を送ります**。
 
 会話の記録・キー入力の外部送信・クラウド API は使用しません。処理は **お使いの PC 内だけ** で完結します。
 
@@ -71,7 +74,7 @@ ZIP を展開すると、おおむね次の構成になります。
 | `Data\` | ショートカット辞書（`windows.json` / `cursor.json` / `excel.json`） |
 | `docs\` | 設計メモ・辞書仕様（リポジトリ版のみ） |
 
-くわしい辞書の書式は [docs/dictionary-schema.md](docs/dictionary-schema.md)、出典は [docs/sources.md](docs/sources.md) をご覧ください。
+詳しい辞書の書式は [docs/dictionary-schema.md](docs/dictionary-schema.md)、出典は [docs/sources.md](docs/sources.md) をご覧ください。
 
 <p align="right">(<a href="#top">トップへ</a>)</p>
 
@@ -80,7 +83,7 @@ ZIP を展開すると、おおむね次の構成になります。
 ### 起動
 
 1. 配布フォルダ内の **`ShortcutMaster.exe`** をダブルクリックします。
-2. 画面右下に **「◯◯ のショートカット」** チップが表示されます（◯◯ は前面アプリ名）。
+2. 画面右下に **「◯◯ のショートカット」** と書かれた小さな表示が出ます（◯◯ は、いま操作中のアプリ名です）。
 
 開発用にビルドした場合:
 
@@ -90,13 +93,13 @@ ZIP を展開すると、おおむね次の構成になります。
 
 ### 操作
 
-1. チップをクリックすると、上方向にショートカット一覧が開きます。
-2. 実行したい行をクリックすると、**直前まで操作していたアプリ**へキーが送信されます。
-3. 一覧を閉じるには、**−（最小化）** またはチップの再クリックで、右下の 1 行チップだけに戻ります。
+1. 右下の表示をクリックすると、上方向にショートカット一覧が開きます。
+2. 実行したい行をクリックすると、**直前まで操作していたアプリ**へキー操作が送られます。
+3. 一覧を閉じるには、**−**・**✕**・右下表示の再クリックのいずれかで、右下の小さな表示だけに戻ります（起動中は右下に常駐します）。
 
 ### 終了
 
-**✕** をクリックすると ShortcutMaster を終了します（一覧の右上、またはチップ右端）。タスクトレイのアイコンを右クリックして **終了** を選んでも同じです。チップ・一覧・トレイアイコンは**先に消えてから**プロセスが終了します（待たされにくい設計です）。
+右下表示の右端の **✕**、または通知領域（タスクトレイ）のアイコンを右クリックして **終了** を選びます。表示が見えないときは、トレイの **右下のチップを表示** から復帰できます。終了時は、画面上の表示とトレイアイコンを**先に消してから**プロセスを終了します。
 
 <p align="right">(<a href="#top">トップへ</a>)</p>
 
@@ -104,12 +107,12 @@ ZIP を展開すると、おおむね次の構成になります。
 
 | 機能 | 説明 |
 |------|------|
-| 常駐チップ | 画面右下に極小の 1 行チップとして常駐。作業を邪魔しにくい表示 |
-| 前面アプリ連動 | プロセス名に応じて辞書を自動切替（Windows / Cursor / Excel） |
-| 1 クリック実行 | 一覧から選んだショートカットを `SendInput` で前面アプリへ送信 |
-| フォーカス非奪取 | `WS_EX_NOACTIVATE` 設計により、パネル操作後もコピー・貼り付け等が元アプリに届きやすい |
-| おすすめ表示 | 優先度と使用回数に基づき、よく使う項目を上位に表示 |
-| 表示のみ項目 | システム専用・破壊的操作・マウス併用など、自動実行できない項目は説明のみ表示 |
+| 右下への常駐表示 | 画面右下に小さな 1 行表示を常駐させます。OCR・画面切り取りの実行中は一時的に隠れ、終了後に戻ります。デスクトップ表示などの直後も、表示が手前に戻るよう再調整します |
+| 使用中アプリとの連動 | プロセス名に応じて辞書を自動で切り替えます（Windows / Cursor / Excel） |
+| 1 クリック実行 | 一覧で選んだショートカットを、使用中のアプリへキー操作として送ります |
+| 入力先を奪わない設計 | 一覧を操作しても、文字入力の対象が元のアプリから移りにくいようにしています（コピーや貼り付けが元のアプリに届きやすくなります） |
+| おすすめ表示 | 優先度と使用回数をもとに、よく使う項目を上位に表示します |
+| 表示のみの項目 | システム専用・取り消せない操作・マウスとの併用など、自動実行できない項目は説明のみ表示します |
 
 ### 一覧の並び
 
@@ -117,7 +120,7 @@ ZIP を展開すると、おおむね次の構成になります。
 |------|------|
 | **おすすめ** | 優先度と使用回数を加味した上位項目 |
 | **カテゴリ** | 基本・移動・編集など、辞書ごとの分類 |
-| **Windows 共通** | Cursor / Excel 利用時に、OS 共通のショートカットを一部表示 |
+| **Windows 共通** | Cursor / Excel 利用時に、OS 共通のショートカットを一部表示します |
 
 <p align="right">(<a href="#top">トップへ</a>)</p>
 
@@ -125,7 +128,7 @@ ZIP を展開すると、おおむね次の構成になります。
 
 | 辞書 | 対象 | 件数（目安） |
 |------|------|-------------|
-| `windows.json` | Windows 本体（フォールバック） | 104 |
+| `windows.json` | Windows 本体（一致しないアプリのとき） | 104 |
 | `cursor.json` | Cursor エディタ | 89 |
 | `excel.json` | Microsoft Excel（日本語 UI 前提） | 103 |
 
@@ -137,9 +140,9 @@ ZIP を展開すると、おおむね次の構成になります。
 
 | ファイル | 内容 |
 |----------|------|
-| `%APPDATA%\ShortcutMaster\usage.json` | 各ショートカット ID の**使用回数のみ**（キー入力内容は記録しません） |
+| `%APPDATA%\ShortcutMaster\usage.json` | 各ショートカット ID の**使用回数のみ**（キー入力の内容は記録しません） |
 
-**プライバシー:** キー入力の記録・外部送信は行いません。保存されるのは「どのショートカットを何回使ったか」という集計のみです。
+**プライバシー:** キー入力の記録・外部送信は行いません。保存するのは「どのショートカットを何回使ったか」という集計のみです。
 
 <p align="right">(<a href="#top">トップへ</a>)</p>
 
@@ -160,28 +163,28 @@ dotnet test ShortcutMaster.slnx
 
 | プロジェクト | 役割 |
 |-------------|------|
-| `src/ShortcutMaster` | WPF 常駐 UI・Win32 連携 |
-| `src/ShortcutMaster.Core` | 辞書モデル・パーサ・使用回数 |
-| `tests/ShortcutMaster.Core.Tests` | 辞書検証・パーサ・スコアリングの単体テスト |
+| `src/ShortcutMaster` | WPF 常駐画面・Win32 連携 |
+| `src/ShortcutMaster.Core` | 辞書モデル・キー解釈・使用回数 |
+| `tests/ShortcutMaster.Core.Tests` | 辞書検証・キー解釈・並び替えの単体テスト |
 
 <p align="right">(<a href="#top">トップへ</a>)</p>
 
 ## よくある質問
 
 **Q. キー入力はインターネットに送信されますか。**  
-A. いいえ。すべてローカルで処理します。外部への通信は行いません。
+A. いいえ。すべてお使いの PC 内で処理します。外部への通信は行いません。
 
-**Q. コピー（Ctrl+C）をパネルから実行できますか。**  
-A. フォーカスを奪わない設計のため、前面アプリに届きやすくなっています。ただし IME 変換中や管理者権限アプリでは送信できない場合があります。
+**Q. コピー（Ctrl+C）を一覧から実行できますか。**  
+A. 入力先を奪わない設計のため、使用中のアプリへ届きやすくなっています。ただし日本語入力の変換中や、管理者権限で動いているアプリでは送れない場合があります。
 
 **Q. 管理者権限で動いているアプリには使えますか。**  
-A. セキュリティ上、非昇格プロセスからは送信できません。案内トーストが表示されます。
+A. セキュリティ上、通常権限の ShortcutMaster からは送信できません。その旨の案内が表示されます。
 
 **Q. ゲーム中でも使えますか。**  
-A. 入力を専有するアプリは対象外です。通常のデスクトップアプリ向けです。
+A. 入力を独占するアプリは対象外です。通常のデスクトップアプリ向けです。
 
 **Q. 自分用のショートカットを追加できますか。**  
-A. v1.0.0 では同梱辞書の編集（`Data\*.json`）で対応します。GUI による編集は今後の予定です。
+A. 現状は同梱辞書の編集（`Data\*.json`）で対応します。画面からの編集は今後の予定です。
 
 <p align="right">(<a href="#top">トップへ</a>)</p>
 
@@ -190,18 +193,19 @@ A. v1.0.0 では同梱辞書の編集（`Data\*.json`）で対応します。GUI
 | 症状 | まず確認すること |
 |------|------------------|
 | 起動しない | [.NET 10 Desktop Runtime（x64）](https://dotnet.microsoft.com/download/dotnet/10.0) が入っているか |
-| 「既に起動しています」と出る | タスクトレイに残っていないか。タスクマネージャーで `ShortcutMaster` を終了 |
-| 送信されない | 対象アプリが管理者権限か。IME で変換中でないか |
+| 「既に起動しています」と出る | 通知領域（タスクトレイ）に残っていないか。タスクマネージャーで `ShortcutMaster` を終了 |
+| 送信されない | 対象アプリが管理者権限か。日本語入力の変換中でないか |
 | 一覧が空 | `Data\` フォルダに辞書 JSON があるか。exe と同じフォルダ構成か |
+| 右下の表示が見えない | トレイの **右下のチップを表示** を試す。OCR・画面切り取り直後は一時的に隠れます |
 
-### 既知の制限（v1.0.0）
+### 既知の制限
 
 | 項目 | 内容 |
 |------|------|
 | 表示のみ | `Ctrl+Alt+Del`、ロック（`Win+L`）、終了（`Alt+F4`）、完全削除（`Shift+Delete`）など |
-| IME | 日本語入力の変換中は送信しません |
-| モニタ | チップはプライマリモニタ右下に固定 |
-| マルチアプリ | 初版は Windows / Cursor / Excel の 3 辞書 |
+| 日本語入力 | 変換中は送信しません |
+| ディスプレイ | 右下表示は、主に使うモニター右下に固定です |
+| 対応アプリ | 初版は Windows / Cursor / Excel の 3 辞書です |
 
 <p align="right">(<a href="#top">トップへ</a>)</p>
 

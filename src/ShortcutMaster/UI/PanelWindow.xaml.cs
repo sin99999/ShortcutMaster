@@ -47,12 +47,16 @@ public partial class PanelWindow : Window
         Top = Math.Max(workArea.Top + 8, _chip.Top - ActualHeight - 8);
     }
 
-    private void CollapseToChip() => Hide();
+    private void CollapseToChip()
+    {
+        Hide();
+        // 一覧を閉じたあとも右下チップが必ず見えるようにする
+        _chip?.EnsureResidentVisible();
+    }
 
     private void OnMinimizeClicked(object sender, RoutedEventArgs e) => CollapseToChip();
 
-    private void OnCloseClicked(object sender, RoutedEventArgs e)
-        => ((App)System.Windows.Application.Current).ExitApplication();
+    private void OnCloseClicked(object sender, RoutedEventArgs e) => CollapseToChip();
 
     private void OnRowClicked(object sender, MouseButtonEventArgs e)
     {

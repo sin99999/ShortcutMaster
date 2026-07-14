@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using ShortcutMaster.Core.Models;
 using ShortcutMaster.Core.Parsing;
 using ShortcutMaster.Core.Services;
@@ -32,6 +33,62 @@ public partial class App : Application
     private ToastWindow? _toast;
     private System.Windows.Forms.NotifyIcon? _notifyIcon;
     private DispatcherTimer? _refreshDebounce;
+    private DispatcherTimer? _overlayRestoreTimer;
+    private DispatcherTimer? _chipHeartbeat;
+    private bool _chipHiddenForOverlay;
+    private DateTime _overlayHiddenAtUtc;
+
+    /// <summary>範囲選択が続くオーバーレイ（閉じるまで UI を隠す）。</summary>
+    private static readonly HashSet<string> InteractiveOverlayEntryIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "win.snip",
+        "win.text-extract",
+        "win.print-screen",
+        "win.screen-record",
+        "win.color-picker",
+        "win.game-bar",
+        "win.game-record",
+    };
+
+    /// <summary>瞬間キャプチャ（隠れてもすぐ復帰してよい）。</summary>
+    private static readonly HashSet<string> InstantCaptureEntryIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "win.full-screenshot",
+        "win.window-screenshot",
+    };
+
+    /// <summary>シェル UI / デスクトップ操作後に Topmost や最小化が乱れやすいもの。</summary>
+    private static readonly HashSet<string> ReassertShellEntryIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "win.show-desktop",
+        "win.minimize-all",
+        "win.minimize-others",
+        "win.start",
+        "win.search",
+        "win.quick-settings",
+        "win.notification-center",
+        "win.widgets",
+        "win.project",
+        "win.cast",
+        "win.copilot",
+        "win.task-view",
+        "win.snap-layouts",
+        "win.alt-tab",
+        "win.task-switcher",
+        "win.clipboard-history",
+        "win.emoji",
+        "win.voice-typing",
+        "win.input-switch",
+        "win.magnifier",
+        "win.vd-new",
+        "win.vd-left",
+        "win.vd-right",
+        "win.vd-close",
+        "win.fullscreen",
+        "win.always-on-top",
+        "win.run",
+        "win.quicklink",
+    };
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -90,8 +147,13 @@ public partial class App : Application
         };
         _tracker.Start();
 
-        _chip.Show();
+        SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
+        EnsureChipResident();
         UpdateContext();
+
+        _chipHeartbeat = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+        _chipHeartbeat.Tick += (_, _) => EnsureChipResident();
+        _chipHeartbeat.Start();
 
         if (!_tracker.IsHookActive)
             ShowToast("前面アプリの検知を開始できませんでした。再起動をお試しください。");
@@ -121,10 +183,84 @@ public partial class App : Application
 
         var menu = new System.Windows.Forms.ContextMenuStrip();
         menu.Items.Add("一覧を開く / 閉じる", null, (_, _) => Dispatcher.Invoke(TogglePanel));
+        menu.Items.Add("右下のチップを表示", null, (_, _) => Dispatcher.Invoke(ForceShowChipResident));
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add("終了", null, (_, _) => Dispatcher.Invoke(ExitApplication));
         _notifyIcon.ContextMenuStrip = menu;
-        _notifyIcon.DoubleClick += (_, _) => Dispatcher.Invoke(TogglePanel);
+        _notifyIcon.DoubleClick += (_, _) => Dispatcher.Invoke(() =>
+        {
+            ForceShowChipResident();
+            TogglePanel();
+        });
+    }
+
+    /// <summary>起動中は右下チップを常に見せる（一覧の開閉とは独立）。</summary>
+    public void EnsureChipResident()
+    {
+        if (_exiting || _chip == null || _chipHiddenForOverlay) return;
+        _chip.EnsureResidentVisible();
+    }
+
+    /// <summary>トレイから強制復帰（オーバーレイ非表示フラグも解除）。</summary>
+    public void ForceShowChipResident()
+    {
+        if (_exiting) return;
+        RestoreUiAfterOverlay();
+    }
+
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e)
+        => Dispatcher.BeginInvoke(ForceShowChipResident);
+
+    private void HideUiForOverlayCapture()
+    {
+        _chipHiddenForOverlay = true;
+        _overlayHiddenAtUtc = DateTime.UtcNow;
+        _panel?.Hide();
+        _chip?.Hide();
+        _toast?.Hide();
+
+        _overlayRestoreTimer?.Stop();
+        _overlayRestoreTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+        _overlayRestoreTimer.Tick += (_, _) =>
+        {
+            _overlayRestoreTimer?.Stop();
+            RestoreUiAfterOverlay();
+        };
+        _overlayRestoreTimer.Start();
+    }
+
+    private void RestoreUiAfterOverlay()
+    {
+        if (_exiting) return;
+        _overlayRestoreTimer?.Stop();
+        _chipHiddenForOverlay = false;
+        _chip?.EnsureResidentVisible();
+    }
+
+    /// <summary>
+    /// OCR などのオーバーレイが閉じたあとにチップを戻す。
+    /// 直後の前面切替はオーバーレイ自身の起動なので、少し待ってから復帰する。
+    /// </summary>
+    private void TryRestoreUiAfterOverlayIfReady()
+    {
+        if (!_chipHiddenForOverlay) return;
+        if ((DateTime.UtcNow - _overlayHiddenAtUtc).TotalMilliseconds < 1500) return;
+        RestoreUiAfterOverlay();
+    }
+
+    /// <summary>OS 側の Desktop/シェル操作後に、遅延で最前面を取り戻す。</summary>
+    private void ScheduleChipReassert(params int[] delaysMs)
+    {
+        foreach (var ms in delaysMs)
+        {
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                EnsureChipResident();
+            };
+            timer.Start();
+        }
     }
 
     public bool TryBeginShortcut()
@@ -143,10 +279,17 @@ public partial class App : Application
     {
         if (_exiting) return;
 
+        TryRestoreUiAfterOverlayIfReady();
+
         var dictionary = ResolveCurrentDictionary();
         if (dictionary == null || _chip == null) return;
 
         _chip.SetContext(dictionary.DisplayName);
+
+        // 前面アプリ切替のたびに最前面を取り戻す（OCR 後に下に沈む対策）
+        if (!_chipHiddenForOverlay)
+            EnsureChipResident();
+
         if (_panel is { IsVisible: true })
             RefreshPanel(dictionary);
     }
@@ -169,9 +312,12 @@ public partial class App : Application
     {
         if (_exiting || _panel == null) return;
 
+        EnsureChipResident();
+
         if (_panel.IsVisible)
         {
             _panel.Hide();
+            EnsureChipResident();
             return;
         }
 
@@ -250,13 +396,43 @@ public partial class App : Application
             return;
         }
 
+        var isInteractiveOverlay = InteractiveOverlayEntryIds.Contains(entry.Id);
+        var isInstantCapture = InstantCaptureEntryIds.Contains(entry.Id);
+        if (isInteractiveOverlay || isInstantCapture)
+            HideUiForOverlayCapture();
+
         var outcome = await _injector.SendAsync(target, steps);
         if (_exiting) return;
 
         if (outcome.Success)
+        {
             _usage.Increment(entry.Id);
+            if (isInstantCapture)
+            {
+                // 瞬間キャプチャは前面切替が無いことが多い → すぐ復帰＋遅延でもう一押し
+                RestoreUiAfterOverlay();
+                ScheduleChipReassert(400);
+            }
+            else if (isInteractiveOverlay)
+            {
+                // OCR / 切り取りは前面切替 or タイムアウトで復帰
+            }
+            else if (ReassertShellEntryIds.Contains(entry.Id))
+            {
+                EnsureChipResident();
+                ScheduleChipReassert(350, 1200);
+            }
+            else
+            {
+                EnsureChipResident();
+            }
+        }
         else
+        {
+            if (isInteractiveOverlay || isInstantCapture)
+                RestoreUiAfterOverlay();
             ShowToast(outcome.Message);
+        }
     }
 
     public void ExitApplication()
@@ -265,6 +441,7 @@ public partial class App : Application
         _exiting = true;
 
         _refreshDebounce?.Stop();
+        _chipHeartbeat?.Stop();
 
         // 見えるものを先に消す（終了のキビキビ感）
         _panel?.Hide();
@@ -288,6 +465,13 @@ public partial class App : Application
 
         _refreshDebounce?.Stop();
         _refreshDebounce = null;
+        _overlayRestoreTimer?.Stop();
+        _overlayRestoreTimer = null;
+        _chipHeartbeat?.Stop();
+        _chipHeartbeat = null;
+        _chipHiddenForOverlay = false;
+
+        try { SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged; } catch { }
 
         _tracker?.Dispose();
         _tracker = null;
