@@ -10,7 +10,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>ShortcutMaster</AssemblyName>
     <RootNamespace>ShortcutMaster</RootNamespace>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>

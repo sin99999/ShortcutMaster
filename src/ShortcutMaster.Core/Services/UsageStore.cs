@@ -53,7 +53,13 @@ public sealed class UsageStore : IDisposable
             _counts[id] = (_counts.TryGetValue(id, out var count) ? count : 0) + 1;
         }
 
-        if (_disposed)
+        bool disposed;
+        lock (_saveGate)
+        {
+            disposed = _disposed;
+        }
+
+        if (disposed)
             SaveAtomic();
         else
             ScheduleSave();
@@ -82,36 +88,40 @@ public sealed class UsageStore : IDisposable
 
     private void SaveAtomic()
     {
-        try
+        lock (_saveGate)
         {
-            var dir = Path.GetDirectoryName(_path);
-            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-
-            string json;
-            lock (_gate)
+            try
             {
-                json = JsonSerializer.Serialize(_counts);
-            }
+                var dir = Path.GetDirectoryName(_path);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
-            var tempPath = _path + ".tmp";
-            File.WriteAllText(tempPath, json);
-            File.Move(tempPath, _path, overwrite: true);
-        }
-        catch
-        {
-            // 保存失敗は致命的ではない（次回の保存で回復する）
+                string json;
+                lock (_gate)
+                {
+                    json = JsonSerializer.Serialize(_counts);
+                }
+
+                var tempPath = _path + ".tmp";
+                File.WriteAllText(tempPath, json);
+                File.Move(tempPath, _path, overwrite: true);
+            }
+            catch
+            {
+                // 保存失敗は致命的ではない（次回の保存で回復する）
+            }
         }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        FlushPending();
-        _disposed = true;
         lock (_saveGate)
         {
+            if (_disposed) return;
+            _disposed = true;
             _saveTimer?.Dispose();
             _saveTimer = null;
         }
+
+        SaveAtomic();
     }
 }

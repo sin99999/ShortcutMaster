@@ -54,7 +54,8 @@ public sealed class ForegroundTracker : IDisposable
         }
         catch
         {
-            return;
+            // アクセス拒否などでも hwnd は更新する（名前はフォールバック）
+            processName = $"pid:{pid}";
         }
 
         var info = new ForegroundInfo(hwnd, processName);

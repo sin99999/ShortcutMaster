@@ -48,11 +48,7 @@ public partial class PanelWindow : Window
     }
 
     private void CollapseToChip()
-    {
-        Hide();
-        // 一覧を閉じたあとも右下チップが必ず見えるようにする
-        _chip?.EnsureResidentVisible();
-    }
+        => ((App)System.Windows.Application.Current).CollapsePanelToChip();
 
     private void OnMinimizeClicked(object sender, RoutedEventArgs e) => CollapseToChip();
 

@@ -68,6 +68,9 @@ public sealed class KeyInjector : IDisposable
         ReleaseStuckModifiers(steps);
         Thread.Sleep(30);
 
+        if (ImeHelper.IsImeComposing(targetHwnd))
+            return new SendOutcome(false, "日本語入力の変換中は送信できません。確定してからお試しください。");
+
         for (var i = 0; i < steps.Count; i++)
         {
             if (NativeMethods.GetForegroundWindow() != targetHwnd)

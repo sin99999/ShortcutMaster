@@ -32,11 +32,13 @@ public partial class App : Application
     private PanelWindow? _panel;
     private ToastWindow? _toast;
     private System.Windows.Forms.NotifyIcon? _notifyIcon;
+    private OutsideClickWatcher? _outsideClick;
     private DispatcherTimer? _refreshDebounce;
     private DispatcherTimer? _overlayRestoreTimer;
     private DispatcherTimer? _chipHeartbeat;
     private bool _chipHiddenForOverlay;
     private DateTime _overlayHiddenAtUtc;
+    private DateTime _lastPanelToggleUtc;
 
     /// <summary>範囲選択が続くオーバーレイ（閉じるまで UI を隠す）。</summary>
     private static readonly HashSet<string> InteractiveOverlayEntryIds = new(StringComparer.OrdinalIgnoreCase)
@@ -55,6 +57,18 @@ public partial class App : Application
     {
         "win.full-screenshot",
         "win.window-screenshot",
+    };
+
+    /// <summary>切り取り・OCR など、復帰を遅らせる前面プロセス名。</summary>
+    private static readonly HashSet<string> OverlayHostProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ScreenClippingHost",
+        "SnippingTool",
+        "ShellExperienceHost",
+        "TextInputHost",
+        "GameBar",
+        "GameBarFTServer",
+        "XboxPcAppFT",
     };
 
     /// <summary>シェル UI / デスクトップ操作後に Topmost や最小化が乱れやすいもの。</summary>
@@ -123,6 +137,12 @@ public partial class App : Application
         _panel = new PanelWindow();
         _panel.AttachChip(_chip);
         _chip.Clicked += TogglePanel;
+        _outsideClick = new OutsideClickWatcher(
+            Dispatcher,
+            () => new Window?[] { _panel, _chip, _toast },
+            CollapsePanelToChip);
+        _outsideClick.ArmFailed += () =>
+            Dispatcher.BeginInvoke(() => ShowToast("外側クリックで閉じる機能を開始できませんでした。"));
 
         SetupTrayIcon();
 
@@ -215,6 +235,8 @@ public partial class App : Application
     {
         _chipHiddenForOverlay = true;
         _overlayHiddenAtUtc = DateTime.UtcNow;
+        // OCR / 切り取り中はグローバルマウスフックを外す
+        _outsideClick?.Disarm();
         _panel?.Hide();
         _chip?.Hide();
         _toast?.Hide();
@@ -245,6 +267,11 @@ public partial class App : Application
     {
         if (!_chipHiddenForOverlay) return;
         if ((DateTime.UtcNow - _overlayHiddenAtUtc).TotalMilliseconds < 1500) return;
+
+        var fg = _tracker?.Current?.ProcessName;
+        if (!string.IsNullOrEmpty(fg) && OverlayHostProcessNames.Contains(fg))
+            return;
+
         RestoreUiAfterOverlay();
     }
 
@@ -312,12 +339,16 @@ public partial class App : Application
     {
         if (_exiting || _panel == null) return;
 
+        // ダブルクリックで開いて即閉じるのを抑止
+        var now = DateTime.UtcNow;
+        if ((now - _lastPanelToggleUtc).TotalMilliseconds < 320) return;
+        _lastPanelToggleUtc = now;
+
         EnsureChipResident();
 
         if (_panel.IsVisible)
         {
-            _panel.Hide();
-            EnsureChipResident();
+            CollapsePanelToChip();
             return;
         }
 
@@ -326,6 +357,16 @@ public partial class App : Application
 
         RefreshPanel(dictionary);
         _panel.ShowNearChip();
+        _outsideClick?.Arm();
+    }
+
+    /// <summary>一覧を閉じて右下チップだけにする（− / ✕ / 範囲外クリック共通）。</summary>
+    public void CollapsePanelToChip()
+    {
+        _outsideClick?.Disarm();
+        if (_panel is { IsVisible: true })
+            _panel.Hide();
+        EnsureChipResident();
     }
 
     public void ShowToast(string message)
@@ -374,6 +415,10 @@ public partial class App : Application
                 case ActivateOutcome.FailedElevated:
                     ShowToast("管理者権限で起動中のため前面に表示できません。");
                     return;
+                case ActivateOutcome.FailedForeground:
+                case ActivateOutcome.NotRunning:
+                    // 前面化できない／未起動 → 下の send（ホットキー）で起動・再表示を試みる
+                    break;
             }
         }
 
@@ -442,6 +487,7 @@ public partial class App : Application
 
         _refreshDebounce?.Stop();
         _chipHeartbeat?.Stop();
+        _outsideClick?.Disarm();
 
         // 見えるものを先に消す（終了のキビキビ感）
         _panel?.Hide();
@@ -469,6 +515,8 @@ public partial class App : Application
         _overlayRestoreTimer = null;
         _chipHeartbeat?.Stop();
         _chipHeartbeat = null;
+        _outsideClick?.Dispose();
+        _outsideClick = null;
         _chipHiddenForOverlay = false;
 
         try { SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged; } catch { }
